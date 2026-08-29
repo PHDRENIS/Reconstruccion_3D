@@ -48,6 +48,16 @@ output/
 experiments/inferencia/Validation/
 experiments/ablacion/*/overlays/*.png
 !experiments/ablacion/*/overlays/sample_*.png
+# Ablacion masks: 954 PNGs (~4.6 MB) no versionados, regenerables
+experiments/ablacion/*/masks/*.png
+!experiments/ablacion/*/masks/README.md
+!experiments/ablacion/*/masks/.gitkeep
+
+# Ejemplos RAW pesados (solo muestras .png versionadas)
+docs/ejemplos/*.raw
+
+# LaTeX duplicados / temporales
+docs/reporte_final/main.bbl-SAVE-ERROR
 
 # Logs
 *.log

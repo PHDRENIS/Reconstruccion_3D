@@ -1,8 +1,8 @@
 # Fine-tuning YOLO11x-seg para SUN-RGB-D (máxima precisión)
 
-# Rutas
-DATA_ROOT: "/zfs-home/202501029N/Terminal/TT/SUNRBG_IMAGES"
-OUTPUT_ROOT: "/zfs-home/202501029N/Terminal/F Vision"
+# Rutas (relativas al repo; editar si tu dataset esta en otro disco)
+DATA_ROOT: "data/SUNRGBD"
+OUTPUT_ROOT: "outputs/fv2"
 
 # Modelo base
 MODEL_BASE: "yolo11x-seg.pt"

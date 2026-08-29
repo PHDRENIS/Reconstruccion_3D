@@ -1,7 +1,7 @@
 # Dataset YOLO-seg para IR (auto-generado con FastSAM)
 # Este archivo se genera automáticamente en main.py
 
-path: /zfs-home/202501029N/Terminal/F Vision/Reentreno/data
+path: data/yolo_data
 train: ir
 val: ir
 

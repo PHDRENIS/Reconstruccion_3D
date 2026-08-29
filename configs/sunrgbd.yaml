@@ -1,6 +1,6 @@
-path: /zfs-home/202501029N/Terminal/F Vision/data/sunrgbd
-train: images/train
-val: images/val
+path: data/SUNRGBD
+train: Train
+val: Validation
 nc: 17
 names:
   0: bed
