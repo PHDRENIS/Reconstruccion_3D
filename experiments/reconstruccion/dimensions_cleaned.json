@@ -1,0 +1,41 @@
+{
+  "method": "Z_crop + statistical_outlier (std=1.0) + percentile_1_99_XY",
+  "original_points": 7402340,
+  "after_zcrop": 1187272,
+  "after_statistical_filter": 1042691,
+  "after_percentile": 1001188,
+  "bounding_box": {
+    "min": [
+      -3.1684185036382857,
+      -3.355,
+      0.3000015976158711
+    ],
+    "max": [
+      8.345,
+      2.822456456243113,
+      2.7999834093600047
+    ],
+    "dimensions": [
+      11.513418503638286,
+      6.177456456243113,
+      2.4999818117441337
+    ]
+  },
+  "comparison": {
+    "width": {
+      "real": 3.81,
+      "model": 11.513418503638286,
+      "error_percent": 202.18946203775027
+    },
+    "length": {
+      "real": 4.978,
+      "model": 6.177456456243113,
+      "error_percent": 24.095147775072583
+    },
+    "height": {
+      "real": 2.527,
+      "model": 2.4999818117441337,
+      "error_percent": -1.0691803821078922
+    }
+  }
+}

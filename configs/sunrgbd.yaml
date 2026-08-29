@@ -1,0 +1,22 @@
+path: /zfs-home/202501029N/Terminal/F Vision/data/sunrgbd
+train: images/train
+val: images/val
+nc: 17
+names:
+  0: bed
+  1: chair
+  2: table
+  3: sofa
+  4: desk
+  5: dresser
+  6: bookshelf
+  7: lamp
+  8: pillow
+  9: sink
+  10: bathtub
+  11: toilet
+  12: box
+  13: counter
+  14: refrigerator
+  15: tv
+  16: curtain

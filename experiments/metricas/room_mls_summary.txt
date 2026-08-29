@@ -1,0 +1,8 @@
+original_points: 5,346,863
+after_filters: 2,130,800
+mesh_vertices: 96,980
+mesh_triangles: 200,000
+normal_radius: 0.12
+poisson_depth: 10
+mesh_path: C:\Users\renea\Desktop\IPN\TT\Metricas Reconstruccion\room_mls.ply
+cloud_path: C:\Users\renea\Desktop\IPN\TT\Metricas Reconstruccion\room_mls_cloud.ply

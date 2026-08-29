@@ -1,0 +1,152 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\geometry{left=3cm, right=3cm, top=2.5cm, bottom=2.5cm}
+\usepackage{enumitem}
+\usepackage{parskip}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+\titleformat{\section}[block]{\Large\bfseries\centering}{}{0pt}{}
+
+\begin{document}
+
+\begin{center}
+{\LARGE \textbf{BITÁCORA DE CAMBIOS}}\\[1.5em]
+
+{\large Reconstrucción 3D de escenas interiores mediante\\[0.2em]
+una cámara de profundidad de bajo costo}\\[1em]
+
+{\normalsize No. TT: TT2026-1\_IA14}\\[1em]
+
+{\normalsize \textbf{Autores:} René Alejandro Santos Mora\\[0.2em]
+Victor Hugo Tecpa Cisneros}
+\end{center}
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+%============================================================
+% REVISIÓN 1
+%============================================================
+
+\section*{REVISIÓN 1 — Observaciones metodológicas, de argumentación y de resultados}
+\vspace{0.3em}
+\begin{center}
+\textbf{Asesor: Daniel Sánchez Ruiz}
+\end{center}
+\vspace{0.5em}
+
+\begin{itemize}[leftmargin=*, itemsep=1em]
+
+\item \textbf{Inconsistencia entre el RMSE del resumen (1.65 cm) y el RMSE de resultados (3.03 cm).} Diferencia de casi el doble que debe resolverse.
+
+\textit{Acatamiento:} Se corrigió la coherencia numérica global del documento. El RMSE real unificado es de 2.52 cm (0.0252 m), consistente en resumen, resultados y conclusiones. La versión original contenía valores de versiones anteriores del \textit{pipeline} que fueron actualizados.
+
+\item \textbf{La hipótesis no fue evaluada explícitamente en las conclusiones.} El documento dice que los resultados ``son positivos'' pero no compara el RMSE obtenido contra el umbral de 2 cm de la hipótesis.
+
+\textit{Acatamiento:} Se agregó un párrafo explícito en la Sección~6.1 (Conclusiones) que evalúa la hipótesis: RMSE de 2.52 cm supera el umbral de 2 cm. La hipótesis se considera \textit{parcialmente verificada} en su aspecto cualitativo —la integración de aprendizaje profundo y odometría visual compensa deficiencias de sensores de bajo costo— pero \textit{refutada} en su aspecto cuantitativo estricto.
+
+\item \textbf{El criterio del percentil 80 para el filtro de profundidad de FastSAM no fue validado formalmente.} El documento mismo reconoce que ``puede no generalizarse''.
+
+\textit{Acatamiento:} Se ejecutó una ablación empírica con tres percentiles (70, 80 y 90) sobre 318 imágenes. Se agregó la Tabla~8 (``Ablación del Percentil de Profundidad'') con resultados de \texttt{mask\_ratio\_mean}: p70 = 91.15\% (demasiado permisivo), p80 = 69.88\% (seleccionado), p90 = 61.53\% (demasiado restrictivo). Se reconoce que el percentil 80 es un parámetro fijo global que no escala con el tamaño de la habitación, identificando un criterio adaptativo como trabajo futuro.
+
+\item \textbf{Discrepancia en el número de imágenes de validación de Efficient-UNet:} la Sección~4.3 menciona 319 imágenes, pero la Tabla~4 reporta 1,399.
+
+\textit{Acatamiento:} Se aclaró en la Sección~5.1 que el dataset SUN RGB-D se dividió en 7,245 imágenes de entrenamiento y 1,399 de validación independiente, mientras que las 319 imágenes corresponden al conjunto local capturado con la cámara RealSense D430 para transferencia de dominio. Ambos conjuntos están ahora claramente diferenciados.
+
+\item \textbf{No se reportan curvas de aprendizaje} (\textit{loss} y mAP en función de las épocas) para Efficient-UNet V2 ni para YOLO.
+
+\textit{Acatamiento:} Se agregó la Sección~5.1.3 (``Registro de Entrenamiento y Curvas de Convergencia''). Se explica honestamente que el entrenamiento de Efficient-UNet se ejecutó en consola interactiva sin persistencia de \textit{logs}, y que las métricas finales (MAE, RMSE, $\delta < 1.25$) fueron obtenidas sobre el conjunto de validación independiente. Para YOLO, se generaron curvas de aprendizaje pero fueron eliminadas de la versión final a solicitud.
+
+\item \textbf{La función \textit{EdgeAwareLoss} no tiene formulación matemática completa en el documento.} Solo se describe en prosa sin pesos relativos.
+
+\textit{Acatamiento:} Falta que Victor lo agregue.
+
+\item \textbf{El error de trayectoria global (\textit{drift} acumulado a lo largo de 338 fotogramas) no se midió.} No hay estimación cualitativa del \textit{drift} observable en la malla final.
+
+\textit{Acatamiento:} Se agregó la Sección~5.3.3 (``Análisis de Consistencia Geométrica Global'') con un análisis RANSAC sobre la nube de puntos integrada. Se reportan ángulos de ortogonalidad entre paredes adyacentes (desviaciones de 6.69° a 29.41°), errores de paralelismo de paredes opuestas (18.33° y 21.58°) y perpendicularidad con el suelo. Se agregó discusión cualitativa sobre las Figuras~8a y 8b conectando las desalineaciones visuales con las métricas numéricas. El análisis se sustenta con referencias a Iyer et al. (2018) y Fontan et al. (2024), que validan la consistencia geométrica como \textit{proxy} del \textit{drift} cuando no hay \textit{ground truth} de trayectoria.
+
+\item \textbf{Las métricas de YOLO (Box mAP50 = 90.00\%, Mask mAP50 = 87.82\%) se calcularon sobre pseudo-etiquetas de FastSAM sin validación humana.} Deben distinguirse de las métricas que sí tienen \textit{ground truth} real.
+
+\textit{Acatamiento:} Se agregó una Tabla de clasificación de métricas por tipo de validación al inicio del Capítulo~5. Se agregó un párrafo en las conclusiones que distingue explícitamente: (a) métricas con \textit{ground truth} real: RMSE de ICP (2.52 cm) y métricas de Efficient-UNet (MAE, RMSE, $\delta < 1.25$); (b) métrica de consistencia interna: mAP de YOLO, que refleja la capacidad del modelo para imitar a FastSAM, no una validación independiente contra \textit{ground truth} humano.
+
+\item \textbf{No se reportan las dimensiones de la malla decimada final ni el tamaño del archivo exportado.}
+
+\textit{Acatamiento:} Se agregó la Tabla~7 (``Complejidad y Tamaño de Archivo'') comparando la malla TSDF original (11,409,829 vértices, 14,148,189 triángulos, 730.35 MB) contra la malla decimada final (69,532 vértices, 150,067 triángulos, 5.24 MB). Reducción del 99.3\% en tamaño de archivo, demostrando aplicabilidad práctica.
+
+\item \textbf{No hay comparación visual entre la escena real (fotografía) y el modelo 3D desde el mismo punto de vista.}
+
+\textit{Acatamiento:} Falta que Victor lo agregue.
+
+\end{itemize}
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+%============================================================
+% REVISIÓN 2
+%============================================================
+
+\section*{REVISIÓN 2 — Observaciones sobre validación externa y alcance}
+\vspace{0.3em}
+\begin{center}
+\textbf{Asesor: Jesús Hernández Rojas}
+\end{center}
+\vspace{0.5em}
+
+\begin{itemize}[leftmargin=*, itemsep=1em]
+
+\item \textbf{Las conclusiones carecen de una autocrítica fuerte sobre la falta de validación externa.} Al final dicen ``los resultados son positivos y validan que el enfoque es viable'', sin delimitar el alcance real.
+
+\textit{Acatamiento:} Se ajustó la frase de cierre del primer párrafo de la Sección~6.1: ``viable'' se reemplazó por ``viable bajo las condiciones experimentales aquí reportadas''. Se insertó un nuevo párrafo de contextualización que reconoce que la validación experimental se realizó en un único entorno controlado (iluminación infrarroja estable, textura superficial suficiente, ausencia de objetos reflectantes o transparentes) y que la robustez en condiciones distintas —espejos, superficies de baja textura infrarroja, iluminación variable, oclusiones severas— \textbf{no está garantizada}.
+
+\item \textbf{``Viable'' para un laboratorio bajo condiciones controladas, no para una aplicación real.} Un cliente que quiera escanear su casa podría encontrarse con que el modelo se pierde en una habitación con espejos o con poca textura infrarroja.
+
+\textit{Acatamiento:} Se reformuló el alcance del trabajo como ``prueba de concepto funcional'' que requiere extensión antes de considerar una aplicación generalizada. Se explicitan los escenarios no evaluados como trabajo futuro prioritario, requiriendo un ciclo de pruebas adicional en múltiples entornos con condiciones adversas sistemáticamente variadas.
+
+\item \textbf{El sistema no fue evaluado en condiciones adversas} (espejos, poca textura infrarroja). La evaluación no contempla la diversidad de escenarios reales.
+
+\textit{Acatamiento:} Se agregó un párrafo de cierre al final de la Sección~6.1 (antes de la subsección de Limitaciones) que sintetiza que la transición de un prototipo de laboratorio a un sistema robusto requiere necesariamente un protocolo de validación más amplio: comparación contra \textit{ground truth} de trayectoria externo, evaluación en superficies problemáticas (vidrio, metal pulido) y pruebas de generalización en múltiples escenarios. Estos elementos, no abordados por restricciones de tiempo y equipo, se identifican como el siguiente paso crítico para consolidar la viabilidad del enfoque.
+
+\end{itemize}
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+%============================================================
+% RESUMEN
+%============================================================
+
+\section*{RESUMEN}
+
+\begin{itemize}[leftmargin=*, itemsep=0.5em]
+\item \textbf{Observaciones totales atendidas:} 11 de 13 (2 pendientes)
+\item \textbf{Páginas finales del documento:} 55
+\item \textbf{Tablas nuevas agregadas:} 5
+\item \textbf{Figuras nuevas agregadas:} 2
+\item \textbf{Referencias bibliográficas nuevas:} 3 (Tan \& Le, 2019; Iyer et al., 2018; Fontan et al., 2024)
+\item \textbf{Archivos de soporte generados:} 4 (análisis RANSAC, ablación p70/p80/p90, post-procesamiento dimensional)
+\end{itemize}
+
+\vspace{1em}
+\begin{center}
+\textbf{Pendientes:}
+\end{center}
+\begin{itemize}[leftmargin=*, itemsep=0.5em]
+\item Formulación matemática completa de \textit{EdgeAwareLoss} $\rightarrow$ Victor
+\item Comparación visual fotografía real vs.\ modelo 3D desde el mismo ángulo $\rightarrow$ Victor
+\end{itemize}
+
+\end{document}

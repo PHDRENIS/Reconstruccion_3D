@@ -1,0 +1,11 @@
+frames: 338
+intrinsics: fx=380.69 fy=380.69 cx=317.98 cy=235.06
+avg_yolo_dets: 20.72
+avg_mask_ratio: 0.6859
+avg_valid_depth: 0.9313
+icp_fitness: 0.9186
+icp_rmse: 0.0303
+mesh_vertices: 11416885
+mesh_triangles: 18142479
+mesh_path: C:\Users\renea\Desktop\IPN\TT\Nueva reconstrucción\reconstruction_mesh.ply
+cloud_path: C:\Users\renea\Desktop\IPN\TT\Nueva reconstrucción\reconstruction_cloud.ply

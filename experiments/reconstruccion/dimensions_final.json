@@ -1,0 +1,26 @@
+{
+  "method": "Z_crop [0.3,2.8] + statistical_outlier(std=1.0) + symmetric_crop(\u00b12.0m from median center)",
+  "original_points": 7402340,
+  "final_points": 400282,
+  "center": [
+    -0.505,
+    -0.525
+  ],
+  "dimensions": {
+    "width_x": {
+      "real": 3.81,
+      "model": 4.0,
+      "error_percent": 4.986876640419946
+    },
+    "length_y": {
+      "real": 4.978,
+      "model": 3.972984526417261,
+      "error_percent": -20.18914169511327
+    },
+    "height_z": {
+      "real": 2.527,
+      "model": 2.4998413101059667,
+      "error_percent": -1.074740399447308
+    }
+  }
+}

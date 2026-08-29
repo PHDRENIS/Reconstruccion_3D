@@ -1,0 +1,80 @@
+# Fine-tuning YOLO11s-seg para SUN-RGB-D
+# Configuración de entrenamiento
+
+# Rutas
+DATA_ROOT: "C:/Users/renea/Desktop/TT/SUNRBG_IMAGES"
+OUTPUT_ROOT: "C:/Users/renea/Desktop/TT/F Vision"
+
+# Modelo base
+MODEL_BASE: "yolo11s-seg.pt"  # Modelo con segmentación
+
+# Entrenamiento
+TRAINING:
+  epochs: 100
+  imgsz: 640
+  batch: 8  # Ajustar según VRAM (8 para ~8GB, 4 para 4GB)
+  device: "0"  # GPU (usar "cpu" si no hay GPU)
+  
+  # Optimizador
+  optimizer: "SGD"
+  lr0: 0.01
+  lrf: 0.01
+  momentum: 0.937
+  weight_decay: 0.0005
+  
+  # Warmup
+  warmup_epochs: 3.0
+  warmup_momentum: 0.8
+  warmup_bias_lr: 0.1
+  
+  # Regularización
+  close_mosaic: 10
+  dropout: 0.0
+  
+  # Augmentations
+  hsv_h: 0.015
+  hsv_s: 0.7
+  hsv_v: 0.4
+  degrees: 0.0
+  translate: 0.1
+  scale: 0.5
+  shear: 0.0
+  perspective: 0.0
+  flipud: 0.0
+  fliplr: 0.5
+  mosaic: 1.0
+  mixup: 0.0
+  
+  # Early stopping
+  patience: 15
+  
+  # Validación
+  val: true
+  plots: true
+  save: true
+  save_period: 10
+
+# Clases de SUN-RGB-D para segmentación
+CLASSES:
+  0: bed
+  1: chair
+  2: table
+  3: sofa
+  4: desk
+  5: dresser
+  6: bookshelf
+  7: lamp
+  8: pillow
+  9: sink
+  10: bathtub
+  11: toilet
+  12: box
+  13: counter
+  14: refrigerator
+  15: TV
+  16: curtain
+
+# División del dataset
+DATASET:
+  train_split: 0.85  # 85% entrenamiento
+  val_split: 0.15   # 15% validación

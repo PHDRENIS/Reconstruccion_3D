@@ -1,0 +1,74 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+.venv/
+.venv312/
+venv/
+env/
+ENV/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data - NO subir dataset completo a GitHub
+data/SUNRGBD/
+data/SUNRBG_IMAGES/
+*.npy
+*.ply
+*.pcd
+
+# Outputs y modelos grandes (usar Git LFS o Releases si es necesario)
+outputs/
+runs/
+output/
+*.pt
+*.pth
+*.ckpt
+*.keras
+*.h5
+
+# Experiments pesados - mantener solo muestras
+experiments/inferencia/Validation/
+experiments/ablacion/*/overlays/*.png
+!experiments/ablacion/*/overlays/sample_*.png
+
+# Logs
+*.log
+logs/
+
+# LaTeX auxiliary
+docs/reporte_final/*.aux
+docs/reporte_final/*.bbl
+docs/reporte_final/*.blg
+docs/reporte_final/*.bcf
+docs/reporte_final/*.fdb_latexmk
+docs/reporte_final/*.fls
+docs/reporte_final/*.out
+docs/reporte_final/*.run.xml
+docs/reporte_final/*.synctex.gz
+docs/reporte_final/*.toc
+docs/reporte_final/*.log
+
+# Ruff cache
+.ruff_cache/
+
+# Temp
+_temp_*
+prueba*.png

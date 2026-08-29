@@ -1,0 +1,10 @@
+frames: 319
+valid_depth_ratio_mean: 0.9234706031217346
+valid_depth_ratio_min: 0.7293717447916667
+valid_depth_ratio_max: 0.9744921875
+icp_fitness_mean: 0.9554327467506167
+icp_rmse_mean: 0.02521394673260966
+mesh_vertices: 11409829
+mesh_triangles: 14148189
+mesh_path: C:\Users\renea\Desktop\IPN\TT\Nueva reconstruccion\reconstruction_mesh.ply
+point_cloud_path: C:\Users\renea\Desktop\IPN\TT\Nueva reconstruccion\reconstruction_cloud.ply

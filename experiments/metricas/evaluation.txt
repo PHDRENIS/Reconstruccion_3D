@@ -1,0 +1,10 @@
+frames: 319
+avg_yolo_dets: 15.36
+avg_mask_ratio: 0.5667
+avg_valid_depth: 0.9235
+icp_fitness: 0.9745
+icp_rmse: 0.026
+mesh_vertices: 5637875
+mesh_triangles: 10048530
+mesh_path: C:\Users\renea\Desktop\IPN\TT\Posible reconstruccion final\reconstruction_mesh.ply
+cloud_path: C:\Users\renea\Desktop\IPN\TT\Posible reconstruccion final\reconstruction_cloud.ply

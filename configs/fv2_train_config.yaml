@@ -1,0 +1,111 @@
+# Fine-tuning YOLO11x-seg para SUN-RGB-D (máxima precisión)
+
+# Rutas
+DATA_ROOT: "/zfs-home/202501029N/Terminal/TT/SUNRBG_IMAGES"
+OUTPUT_ROOT: "/zfs-home/202501029N/Terminal/F Vision"
+
+# Modelo base
+MODEL_BASE: "yolo11x-seg.pt"
+
+# Entrenamiento
+TRAINING:
+  epochs: 500
+  imgsz: 1536
+  batch: 24
+  device: "0"
+
+  optimizer: "AdamW"
+  lr0: 0.001
+  lrf: 0.01
+  momentum: 0.937
+  weight_decay: 0.0005
+
+  warmup_epochs: 5.0
+  warmup_momentum: 0.8
+  warmup_bias_lr: 0.1
+
+  cos_lr: true
+  close_mosaic: 20
+  overlap_mask: true
+  mask_ratio: 1
+
+  workers: 16
+  cache: "ram"
+  amp: true
+  patience: 100
+
+  val: true
+  plots: true
+  save: true
+
+  # Augmentations de alta calidad para segmentación
+  hsv_h: 0.015
+  hsv_s: 0.7
+  hsv_v: 0.4
+  degrees: 5.0
+  translate: 0.1
+  scale: 0.25
+  shear: 2.0
+  perspective: 0.0
+  flipud: 0.0
+  fliplr: 0.5
+  mosaic: 1.0
+  mixup: 0.1
+  copy_paste: 0.0
+
+# Pseudo-labeling sin GT (teacher auxiliar)
+PSEUDO_LABELS:
+  yolo_confidence: 0.35
+  yolo_iou: 0.6
+  val_stride: 10
+
+  quality:
+    min_mask_pixels: 140
+    min_polygon_points: 6
+    min_polygon_area: 90.0
+    dedupe_mask_iou: 0.85
+
+  teacher:
+    enabled: true
+    world_model: "yolov8x-worldv2.pt"
+    sam_model: "sam2_b.pt"
+    confidence: 0.28
+    iou: 0.6
+    device: "cuda"
+    use_box_fallback: false
+
+    # Si se deja vacío, usa automáticamente clases SUN-RGB-D no cubiertas por COCO->SUNRGBD
+    target_classes: []
+
+# Evaluación
+EVALUATION:
+  imgsz: 1536
+  batch: 12
+  split: "val"
+  augment: true
+  plots: true
+  save_json: true
+
+# Clases de SUN-RGB-D para segmentación
+CLASSES:
+  0: bed
+  1: chair
+  2: table
+  3: sofa
+  4: desk
+  5: dresser
+  6: bookshelf
+  7: lamp
+  8: pillow
+  9: sink
+  10: bathtub
+  11: toilet
+  12: box
+  13: counter
+  14: refrigerator
+  15: tv
+  16: curtain
+
+DATASET:
+  train_split: 0.85
+  val_split: 0.15

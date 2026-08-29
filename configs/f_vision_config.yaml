@@ -1,0 +1,67 @@
+# Configuración del Pipeline de Procesamiento Semántico
+# Sección 4.7 - FusiónVisión
+
+paths:
+  data_root: "C:/Users/renea/Desktop/TT/SUNRBG_IMAGES"
+  output_root: "C:/Users/renea/Desktop/TT/F Vision/output"
+  models_dir: "C:/Users/renea/Desktop/TT/F Vision/models"
+  
+dataset:
+  split: "train"  # train | validation | all
+  max_images: null  # null = todas
+
+# Modelos de Detección
+models:
+  # YOLO11 con segmentación integrada
+  yolo:
+    model_name: "yolo11x-seg.pt"
+    confidence_threshold: 0.25
+    iou_threshold: 0.45
+    device: "cpu"  # Cambiar a "cuda" cuando tengas PyTorch con CUDA
+    
+  # RT-DETR opcional (solo para escenas complejas)
+  rt_detr:
+    model_name: "rt-detr-v2.pt"
+    confidence_threshold: 0.3
+    iou_threshold: 0.5
+    device: "cpu"
+    enabled: false  # Desactivado por defecto (usar solo YOLO)
+
+# Configuración de fusión de detectores
+detector_fusion:
+  use_rt_detr: false  # Usar solo YOLO por defecto
+  use_rt_detr_when:
+    min_objects: 10
+    low_confidence: 0.5
+
+# Clases dinámicas (ignoradas en reconstrucción)
+semantic:
+  dynamic_classes:
+    - "person"
+    - "dog"
+    - "cat"
+    - "bird"
+    - "horse"
+    - "car"
+    - "bicycle"
+    - "motorcycle"
+    - "airplane"
+    - "bus"
+    - "train"
+    - "truck"
+
+# Configuración de procesamiento
+processing:
+  batch_size: 1
+  save_overlays: true
+  save_masks: true
+  save_json: true
+  save_depth: true
+  overlay_alpha: 0.4
+  overlay_thickness: 2
+  
+# Logging
+logging:
+  level: "INFO"
+  save_to_file: true
+  log_file: "F Vision/logs/pipeline.log"

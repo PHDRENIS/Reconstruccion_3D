@@ -1,0 +1,4 @@
+frames: 318
+mask_ratio_mean: 0.9114569104592506
+mask_ratio_min: 0.005211588541666667
+mask_ratio_max: 0.980205078125

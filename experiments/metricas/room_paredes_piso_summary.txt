@@ -1,0 +1,5 @@
+walls: 4
+floor: yes
+mesh_vertices: 20
+mesh_triangles: 10
+path: C:\Users\renea\Desktop\IPN\TT\Metricas Reconstruccion\room_paredes_piso.ply

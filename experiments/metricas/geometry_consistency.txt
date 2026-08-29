@@ -1,0 +1,62 @@
+============================================================
+ANALISIS DE CONSISTENCIA GEOMETRICA GLOBAL
+============================================================
+
+--- Malla Limpia (room_final) ---
+Planos detectados: 8
+Paredes: 4, Piso: 1, Techo: 1
+
+ANGULOS ENTRE PAREDES ADYACENTES (esperado: 90°):
+  Pared2-Pared1: 13.06° (error: 76.94°)
+  Pared2-Pared4: 82.08° (error: 7.92°)
+  Pared2-Pared5: 76.05° (error: 13.95°)
+  Pared1-Pared4: 86.79° (error: 3.21°)
+  Pared1-Pared5: 84.51° (error: 5.49°)
+  Pared4-Pared5: 19.42° (error: 70.58°)
+
+PARALELISMO PAREDES OPUESTAS (esperado: 0° o 180°):
+  Pared2-Pared1: 13.06° (error: 13.06°)
+  Pared4-Pared5: 19.42° (error: 19.42°)
+
+DISTANCIAS ENTRE PAREDES OPUESTAS:
+  Pared2-Pared1: [np.float64(0.63), np.float64(0.63), np.float64(0.63)] m, variacion: 0.0 m
+  Pared4-Pared5: [np.float64(1.411), np.float64(1.411), np.float64(1.411)] m, variacion: 0.0 m
+
+ANGULOS PARED-SUELO (esperado: 90°):
+  Pared2: 70.93° (error: 19.07°)
+  Pared1: 80.97° (error: 9.03°)
+  Pared4: 71.18° (error: 18.82°)
+  Pared5: 86.92° (error: 3.08°)
+
+============================================================
+
+--- Nube Etiquetada (room_labeled) ---
+Planos detectados: 8
+Paredes: 4, Piso: 1, Techo: 0
+
+ANGULOS ENTRE PAREDES ADYACENTES (esperado: 90°):
+  Pared0-Pared2: 77.4° (error: 12.6°)
+  Pared0-Pared3: 73.86° (error: 16.14°)
+  Pared0-Pared4: 76.07° (error: 13.93°)
+  Pared2-Pared3: 5.08° (error: 84.92°)
+  Pared2-Pared4: 11.89° (error: 78.11°)
+  Pared3-Pared4: 8.39° (error: 81.61°)
+
+PARALELISMO PAREDES OPUESTAS (esperado: 0° o 180°):
+  Pared2-Pared3: 5.08° (error: 5.08°)
+  Pared2-Pared4: 11.89° (error: 11.89°)
+  Pared3-Pared4: 8.39° (error: 8.39°)
+
+DISTANCIAS ENTRE PAREDES OPUESTAS:
+  Pared2-Pared3: [np.float64(2.238), np.float64(2.238), np.float64(2.238)] m, variacion: 0.0 m
+  Pared2-Pared4: [np.float64(0.331), np.float64(0.331), np.float64(0.331)] m, variacion: 0.0 m
+  Pared3-Pared4: [np.float64(1.908), np.float64(1.908), np.float64(1.908)] m, variacion: 0.0 m
+
+ANGULOS PARED-SUELO (esperado: 90°):
+  Pared0: 76.05° (error: 13.95°)
+  Pared2: 83.57° (error: 6.43°)
+  Pared3: 88.03° (error: 1.97°)
+  Pared4: 84.65° (error: 5.35°)
+
+============================================================
+

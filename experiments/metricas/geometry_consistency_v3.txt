@@ -1,0 +1,51 @@
+======================================================================
+ANALISIS DE CONSISTENCIA GEOMETRICA GLOBAL - V3 (planos agrupados)
+======================================================================
+
+--- Nube Limpia Original ---
+Planos detectados: 15
+Grupos verticales: 4, Paredes principales: 4
+Piso: 1, Techo: 0
+
+Dimensiones estimadas: 2.29m x 0.04m x 2.19m
+
+ANGULOS ENTRE PAREDES PERPENDICULARES (esperado: 90°):
+  Pared0-Pared1: 79.98° (error: 10.02°, dot=-0.174)
+  Pared0-Pared3: 83.31° (error: 6.69°, dot=-0.117)
+  Pared1-Pared2: 60.59° (error: 29.41°, dot=-0.491)
+  Pared2-Pared3: 61.87° (error: 28.13°, dot=-0.471)
+
+PARALELISMO PAREDES OPUESTAS (esperado: 0° o 180°):
+  Pared0-Pared2: 21.58° (error: 21.58°, dot=0.93)
+  Pared1-Pared3: 18.33° (error: 18.33°, dot=0.949)
+
+DISTANCIAS ENTRE PAREDES OPUESTAS:
+  Pared0-Pared2: 0.036 m
+  Pared1-Pared3: 2.293 m
+
+ANGULOS PARED-SUELO (esperado: 90°):
+  Pared0: 88.17° (error: 1.83°)
+  Pared1: 77.07° (error: 12.93°)
+  Pared2: 87.38° (error: 2.62°)
+  Pared3: 84.84° (error: 5.16°)
+
+======================================================================
+
+--- Nube Original ---
+Planos detectados: 15
+Grupos verticales: 2, Paredes principales: 2
+Piso: 1, Techo: 0
+
+ANGULOS ENTRE PAREDES PERPENDICULARES (esperado: 90°):
+  Pared0-Pared1: 79.27° (error: 10.73°, dot=-0.186)
+
+PARALELISMO PAREDES OPUESTAS (esperado: 0° o 180°):
+
+DISTANCIAS ENTRE PAREDES OPUESTAS:
+
+ANGULOS PARED-SUELO (esperado: 90°):
+  Pared0: 88.51° (error: 1.49°)
+  Pared1: 74.99° (error: 15.01°)
+
+======================================================================
+

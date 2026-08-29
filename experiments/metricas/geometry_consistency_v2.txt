@@ -1,0 +1,68 @@
+======================================================================
+ANALISIS DE CONSISTENCIA GEOMETRICA GLOBAL - V2 (nubes originales)
+======================================================================
+
+--- Nube Limpia Original (reconstruction_cloud_cleaned) ---
+Planos detectados: 12
+Paredes (area>3m²): 4, Piso: 1, Techo: 1
+
+Dimensiones estimadas: 2.01m x 0.41m x 0.71m
+
+ANGULOS ENTRE PAREDES PERPENDICULARES (esperado: 90°):
+
+PARALELISMO PAREDES OPUESTAS (esperado: 0° o 180°):
+  Pared3-Pared2: 12.31° (error: 12.31°, dot=0.977)
+  Pared3-Pared10: 16.81° (error: 16.81°, dot=0.957)
+  Pared3-Pared11: 2.71° (error: 2.71°, dot=0.999)
+  Pared2-Pared10: 8.07° (error: 8.07°, dot=0.99)
+  Pared2-Pared11: 10.52° (error: 10.52°, dot=0.983)
+  Pared10-Pared11: 14.24° (error: 14.24°, dot=0.969)
+
+DISTANCIAS ENTRE PAREDES OPUESTAS:
+  Pared3-Pared2: [np.float64(1.557), np.float64(1.557), np.float64(1.557)] m, variacion: 0.0 m
+  Pared3-Pared10: [np.float64(0.413), np.float64(0.413), np.float64(0.413)] m, variacion: 0.0 m
+  Pared3-Pared11: [np.float64(0.449), np.float64(0.449), np.float64(0.449)] m, variacion: 0.0 m
+  Pared2-Pared10: [np.float64(1.144), np.float64(1.144), np.float64(1.144)] m, variacion: 0.0 m
+  Pared2-Pared11: [np.float64(2.006), np.float64(2.006), np.float64(2.006)] m, variacion: 0.0 m
+  Pared10-Pared11: [np.float64(0.862), np.float64(0.862), np.float64(0.862)] m, variacion: 0.0 m
+
+ANGULOS PARED-SUELO (esperado: 90°):
+  Pared3: 81.2° (error: 8.8°)
+  Pared2: 88.03° (error: 1.97°)
+  Pared10: 83.29° (error: 6.71°)
+  Pared11: 80.7° (error: 9.3°)
+
+======================================================================
+
+--- Nube Original (reconstruction_cloud) ---
+Planos detectados: 12
+Paredes (area>3m²): 4, Piso: 1, Techo: 1
+
+Dimensiones estimadas: 1.83m x 0.16m x 5.94m
+
+ANGULOS ENTRE PAREDES PERPENDICULARES (esperado: 90°):
+
+PARALELISMO PAREDES OPUESTAS (esperado: 0° o 180°):
+  Pared3-Pared10: 0.62° (error: 0.62°, dot=1.0)
+  Pared3-Pared11: 10.08° (error: 10.08°, dot=0.985)
+  Pared3-Pared4: 11.41° (error: 11.41°, dot=0.98)
+  Pared10-Pared11: 10.49° (error: 10.49°, dot=0.983)
+  Pared10-Pared4: 11.73° (error: 11.73°, dot=0.979)
+  Pared11-Pared4: 2.38° (error: 2.38°, dot=0.999)
+
+DISTANCIAS ENTRE PAREDES OPUESTAS:
+  Pared3-Pared10: [np.float64(0.158), np.float64(0.158), np.float64(0.158)] m, variacion: 0.0 m
+  Pared3-Pared11: [np.float64(1.505), np.float64(1.505), np.float64(1.505)] m, variacion: 0.0 m
+  Pared3-Pared4: [np.float64(1.832), np.float64(1.832), np.float64(1.832)] m, variacion: 0.0 m
+  Pared10-Pared11: [np.float64(1.347), np.float64(1.347), np.float64(1.347)] m, variacion: 0.0 m
+  Pared10-Pared4: [np.float64(1.674), np.float64(1.674), np.float64(1.674)] m, variacion: 0.0 m
+  Pared11-Pared4: [np.float64(0.327), np.float64(0.327), np.float64(0.327)] m, variacion: 0.0 m
+
+ANGULOS PARED-SUELO (esperado: 90°):
+  Pared3: 85.25° (error: 4.75°)
+  Pared10: 85.06° (error: 4.94°)
+  Pared11: 85.45° (error: 4.55°)
+  Pared4: 83.59° (error: 6.41°)
+
+======================================================================
+

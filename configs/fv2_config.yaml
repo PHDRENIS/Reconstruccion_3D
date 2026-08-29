@@ -1,0 +1,45 @@
+# Configuración del Pipeline de Procesamiento Semántico
+
+paths:
+  data_root: "data/SUNRGBD"  # <-- EDITAR: antes /zfs-home/202501029N/Terminal/TT/SUNRBG_IMAGES
+  output_root: "outputs/fv2"
+  models_dir: "models"
+  
+dataset:
+  split: "all"
+  max_images: null
+
+models:
+  yolo:
+    model_name: "yolo11x-sunrgbd-seg.pt"
+    confidence_threshold: 0.18
+    iou_threshold: 0.6
+    device: "cuda"
+
+semantic:
+  dynamic_classes:
+    - "person"
+    - "dog"
+    - "cat"
+    - "bird"
+    - "horse"
+    - "car"
+    - "bicycle"
+    - "motorcycle"
+    - "airplane"
+    - "bus"
+    - "train"
+    - "truck"
+
+processing:
+  batch_size: 16
+  save_overlays: true
+  save_masks: true
+  save_json: true
+  save_depth: true
+  overlay_alpha: 0.4
+  overlay_thickness: 2
+  
+logging:
+  level: "INFO"
+  save_to_file: true

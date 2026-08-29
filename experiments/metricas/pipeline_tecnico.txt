@@ -1,0 +1,760 @@
+================================================================================
+           PIPELINE DE RECONSTRUCCIÓN 3D DE ESCENAS INTERIORES
+                     MEDIANTE CÁMARA RGB-D DE BAJO COSTO
+
+                        Documentación Técnica Completa
+                               Mayo 2026
+================================================================================
+
+Autores: René Alejandro Santos Mora, Victor Hugo Tecpa Cisneros
+Instituto Politécnico Nacional — UPIIT Campus Tlaxcala
+
+
+RESUMEN
+
+Se presenta la implementación completa de un pipeline de reconstrucción 3D para
+entornos interiores utilizando exclusivamente una cámara RGB-D de bajo costo
+(RealSense). El sistema integra dos modelos de aprendizaje profundo —un detector
+de objetos con segmentación de instancias basado en YOLO11x-seg, y un modelo de
+completado de profundidad con arquitectura Efficient-UNet— junto con un módulo
+de odometría visual (ICP point-to-plane) y fusión volumétrica (TSDF). El pipeline
+fue entrenado con el dataset SUN RGB-D (7,245 imágenes) y adaptado al dominio
+infrarrojo mediante fine‑tune con 319 fotogramas capturados con la cámara propia.
+La versión final (V2) de la reconstrucción alcanza un ICP fitness de 90.9%, un
+RMSE de 1.65 cm, y produce una malla 3D de 300,000 triángulos — libre de piso,
+techo y artefactos de ruido — exportable en formato PLY para su visualización en
+Blender, MeshLab o CloudCompare.
+
+Términos clave: reconstrucción 3D, YOLO11x-seg, ICP, TSDF, cámara RGB-D,
+                  infrarrojo, segmentación de instancias, pseudo-labels, FastSAM.
+
+
+================================================================================
+1. ADQUISICIÓN DE DATOS
+================================================================================
+
+1.1 Dataset SUN RGB-D (Pre-entrenamiento)
+--------------------------------------------------------------------------------
+
+El pre-entrenamiento de los modelos se realizó sobre el dataset SUN RGB-D [1],
+una base de datos a gran escala ampliamente utilizada en visión por computadora
+para tareas de comprensión de escenas interiores. Fue seleccionado por su
+diversidad de escenas (~7,245 imágenes de entrenamiento) y por proporcionar
+datos multimodales alineados.
+
+Estructura del dataset:
+
+    SUNRBG_IMAGES/
+    ├── Train/
+    │   ├── rgb/            → Imágenes RGB (formato JPG, 730×530 px)
+    │   ├── depth_input/    → Mapas de profundidad del sensor con huecos (formato NPY, float32, metros)
+    │   ├── depth_gt/       → Mapas de profundidad densos (ground truth, formato NPY, float32)
+    │   └── mask/           → Máscaras de segmentación por clase (formato PNG, 8-bit)
+    └── Validation/
+        └── (misma estructura, 319 imágenes)
+
+Las 17 clases de objetos interiores anotadas en SUN RGB-D son:
+
+    ID   Clase
+    ─────────────────
+    0    bed            (cama)
+    1    chair          (silla)
+    2    table          (mesa)
+    3    sofa           (sofá)
+    4    desk           (escritorio)
+    5    dresser        (cómoda)
+    6    bookshelf      (estantería)
+    7    lamp           (lámpara)
+    8    pillow         (almohada)
+    9    sink           (fregadero)
+    10   bathtub        (bañera)
+    11   toilet         (inodoro)
+    12   box            (caja)
+    13   counter        (encimera)
+    14   refrigerator   (refrigerador)
+    15   tv             (televisor)
+    16   curtain        (cortina)
+
+
+1.2 Cámara RealSense (Captura de Escena)
+--------------------------------------------------------------------------------
+
+La escena de prueba fue capturada con una cámara RGB-D de bajo costo del
+fabricante Intel (serie RealSense). La cámara proporciona dos modalidades
+por fotograma:
+
+    a) Imagen infrarroja (IR):
+       - Formato: JPG, escala de grises
+       - Resolución: 480 × 640 píxeles
+       - Profundidad de bit: 8-bit (uint8)
+       - Rango dinámico: 15–241 unidades de intensidad
+
+    b) Mapa de profundidad (Depth):
+       - Formato: PNG, 16-bit sin signo (uint16, Z16)
+       - Resolución: 480 × 640 píxeles (alineado con IR)
+       - Escala de profundidad: 0.001 metros por unidad
+       - Rango típico por frame: 0–4,200 mm
+
+Metadata del sensor (archivo de calibración):
+
+    Propiedad          Valor
+    ──────────────────────────────────
+    Formato Depth       Z16
+    Resolución nativa   424 × 240
+    Bytes por pixel     2
+    Distancia focal     210.173737 px
+    Punto principal     (210.884, 117.275)
+    Modelo distorsión   Brown Conrady
+    Escala profundidad  0.001 m/px
+
+Cantidad de pares IR+Depth capturados para reconstrucción: 319 fotogramas.
+Nomenclatura: yolo_data_0000 a yolo_data_0318.
+
+Tabla 1.1 — Comparativa de datasets utilizados
+
+    Propiedad                 SUN RGB-D              RealSense (cámara propia)
+    ─────────────────────────────────────────────────────────────────────────
+    Modalidad visual          RGB (3 canales)        IR (1 canal, grises)
+    Resolución                730 × 530              480 × 640
+    Profundidad               NPY float32 (metros)   PNG uint16 (milímetros)
+    Etiquetas                 17 clases (GT manual)  Pseudo-labels (FastSAM)
+    Cantidad entrenamiento    7,245 pares            319 pares
+    Cantidad validación       319 pares              misma que entrenamiento
+    Sensor utilizado          Kinect v2, RealSense   RealSense (propio)
+    Diversidad de escenas     Alta (oficinas, salas, Una sola habitación
+                              dormitorios, baños)
+
+
+================================================================================
+2. MODELO DE SEGMENTACIÓN SEMÁNTICA (YOLO11x-seg)
+================================================================================
+
+2.1 Arquitectura del Modelo
+--------------------------------------------------------------------------------
+
+Se utilizó YOLO11x-seg (You Only Look Once, versión 11, tamaño extra-grande
+con head de segmentación), la arquitectura más precisa de la familia YOLO
+desarrollada por Ultralytics [2].
+
+Especificaciones:
+
+    Parámetro                    Valor
+    ──────────────────────────────────────
+    Capas totales                204
+    Capas con head segmentación  379
+    Parámetros entrenables       62,051,411
+    Gradientes                   62,051,395
+    GFLOPs (inferencia)          319.7 (entrenamiento) / 318.5 (inferencia)
+    Tamaño del modelo            124.8 MB (FP32)
+
+La arquitectura utiliza un backbone CSPDarknet con bloques C3k2, atención
+espacial C2PSA, y un neck tipo PAN-FPN con conexiones de salto (skip
+connections) para preservar detalles finos en la cabeza de segmentación.
+El head de segmentación (clase Segment) produce simultáneamente cajas
+delimitadoras, etiquetas de clase y máscaras de segmentación a nivel de píxel.
+
+
+2.2 Pre-entrenamiento en SUN RGB-D
+--------------------------------------------------------------------------------
+
+El modelo base fue pre-entrenado sobre el conjunto de entrenamiento de SUN
+RGB-D utilizando sus 17 clases de objetos interiores con etiquetas de
+segmentación ground truth. Este pre-entrenamiento dota al modelo de la
+capacidad de reconocer objetos comunes en escenas interiores (camas, sillas,
+mesas, sofás, etc.) antes de cualquier adaptación al dominio infrarrojo.
+
+Configuración del pre-entrenamiento:
+
+    Parámetro                    Valor
+    ──────────────────────────────────────────
+    Modelo base                  yolo11x-seg.pt (pesos COCO)
+    Épocas                       100
+    Tamaño de imagen (imgsz)     640 px
+    Tamaño de lote (batch)       variable (según disponibilidad VRAM)
+    Optimizador                  SGD
+    Tasa de aprendizaje (lr0)    0.01
+    Factor final (lrf)           0.01
+    Momento (momentum)           0.937
+    Decaimiento de peso          0.0005
+    Épocas de warmup             3.0
+    Cierre de mosaico (close)    época 90 (10 últimas sin mosaic)
+    Dispositivo                  NVIDIA GeForce RTX 3080 Ti (12 GB VRAM)
+    Tiempo total                 4.815 horas
+
+Métricas obtenidas sobre el conjunto de validación de SUN RGB-D (319 imágenes,
+5,449 instancias):
+
+Tabla 2.1 — Métricas de validación del pre-entrenamiento SUN RGB-D
+
+    Métrica             Box         Mask
+    ────────────────────────────────────────
+    Precisión (P)       0.891       0.847
+    Recall (R)          0.812       0.764
+    mAP50               0.919       0.811
+    mAP50-95            0.761       0.498
+
+Comparación con YOLO11s-seg (modelo reportado en el marco teórico):
+
+Tabla 2.2 — Mejora de YOLO11x vs YOLO11s
+
+    Métrica          YOLO11s-seg    YOLO11x-seg    Ganancia
+    ────────────────────────────────────────────────────────
+    Box mAP50         0.633          0.919          +28.6%
+    Box mAP50-95      0.522          0.761          +23.9%
+    Mask mAP50         —             0.811          (nuevo)
+    Mask mAP50-95      —             0.498          (nuevo)
+
+El cambio de la variante "s" (small) a la "x" (extra-large) produjo una
+mejora de casi 29 puntos porcentuales en la métrica principal de detección
+(Box mAP50). Este resultado valida la decisión de utilizar la arquitectura
+más grande para maximizar la precisión, aprovechando la disponibilidad de
+GPUs A100 en el clúster de cómputo institucional.
+
+
+2.3 Adaptación a Dominio Infrarrojo (Fine-Tune)
+--------------------------------------------------------------------------------
+
+2.3.1 Problema del gap de dominio
+
+El modelo pre-entrenado opera sobre imágenes RGB (3 canales de color). Sin
+embargo, la cámara RealSense utilizada para la captura de escenas produce
+imágenes infrarrojas monocromáticas (1 canal, escala de grises). Este cambio
+de dominio (RGB → IR) provoca que el modelo pre-entrenado no detecte ningún
+objeto al ser aplicado directamente sobre imágenes IR, debido a:
+
+    a) Diferente respuesta espectral: el IR captura información de temperatura
+       y reflectividad infrarroja, no color visible.
+    b) Diferente distribución de intensidades: las texturas en IR difieren
+       sustancialmente de las texturas RGB que el modelo aprendió.
+    c) Ruido del sensor IR: patrón de ruido específico del sensor, ausente
+       en las imágenes SUN RGB-D.
+
+2.3.2 Estrategia de mitigación: pseudo-labels con FastSAM + Depth
+
+Para generar etiquetas de entrenamiento en el dominio IR sin requerir
+anotación manual, se implementó un pipeline de generación de pseudo-labels
+basado en dos componentes:
+
+    Componente A — FastSAM (Segment Anything Model, variante rápida):
+
+        Modelo base: FastSAM-s.pt (22.7 MB), basado en YOLOv8-seg.
+        Inferencia: imagen IR replicada a 3 canales (gris → BGR).
+        Umbral de confianza: 0.3.
+        Área mínima de máscara: 500 píxeles.
+        Descarte de componentes >70% del área del frame (fondo/paredes).
+
+    Componente B — Refinamiento con profundidad:
+
+        Percentil de profundidad: 80% (excluye fondo lejano).
+        Filtro: elimina máscaras con profundidad media mayor al percentil.
+        Morfología: cierre (kernel 3×3, 1 iteración).
+        Conversión: contornos → polígonos normalizados (formato YOLO-seg).
+
+El pipeline produce un archivo .txt por cada imagen IR, conteniendo los
+polígonos de segmentación en coordenadas normalizadas [0,1]:
+
+    Formato: <class_id> <x1> <y1> <x2> <y2> ... <xn> <yn>
+
+Dado que FastSAM no distingue entre las 17 clases semánticas de SUN RGB-D,
+las pseudo-labels utilizan una única clase: class_id=0, name="object".
+
+2.3.3 Configuración del fine-tune
+
+    Parámetro                    Valor                          Notas
+    ─────────────────────────────────────────────────────────────────────
+    Modelo base                  yolo11x-sunrgbd-seg.pt         Pre-entrenado 100 épocas
+    Épocas                       60                             Fine-tune, no desde cero
+    Tamaño de imagen (imgsz)     640 px
+    Tamaño de lote (batch)       16
+    Dispositivo                  NVIDIA A100-SXM4-80GB (81 GB)
+    Trabajadores (workers)       8
+    Optimizador                  AdamW                          Mejor convergencia fina
+    Tasa de aprendizaje (lr0)    0.0005                         Baja para preservar pesos
+    Factor final (lrf)           0.001
+    Momento (momentum)           0.937
+    Decaimiento de peso          0.0005
+    Épocas de warmup             3.0
+    Cosine LR scheduler          true
+    Cierre de mosaico (close)    época 50 (10 últimas sin mosaic)
+    Paciencia (early stop)       30 épocas
+    AMP (Mixed Precision)        true                           Aceleración en A100
+
+Augmentación de datos adaptada a imágenes infrarrojas:
+
+    Parámetro          Valor    Justificación
+    ────────────────────────────────────────────────────
+    hsv_h              0.0      IR no tiene matiz de color
+    hsv_s              0.0      IR no tiene saturación
+    hsv_v              0.2      Variación de brillo (intensidad IR)
+    degrees            5.0°     Rotación moderada
+    translate          0.1      Traslación
+    scale              0.25     Escala
+    shear              0.0      Sin cizalladura
+    perspective        0.0      Sin deformación de perspectiva
+    flipud             0.0      Sin volteo vertical
+    fliplr             0.5      Volteo horizontal 50%
+    mosaic             0.5      Mosaico reducido (pseudo-labels ruidosas)
+    mixup              0.0      Desactivado (rompe pseudo-labels)
+    copy_paste         0.0      Desactivado
+
+La augmentación se adaptó específicamente al dominio IR: se desactivaron
+los canales de color HSV (h=0, s=0) ya que las imágenes infrarrojas carecen
+de información cromática, y se conservó únicamente la variación de brillo
+(hsv_v=0.2) para simular cambios de iluminación infrarroja. El mosaic se
+redujo a 0.5 (vs 1.0 estándar) porque las pseudo-labels contienen ruido
+que el mosaic amplificaría; mixup y copy_paste se desactivaron completamente
+por la misma razón.
+
+2.3.4 Métricas del fine-tune
+
+Tabla 2.3 — Métricas de validación del fine-tune en IR (319 imágenes, 4,629 instancias)
+
+    Métrica             Box         Mask
+    ────────────────────────────────────────
+    Precisión (P)       0.881       0.828
+    Recall (R)          0.779       0.730
+    mAP50               0.890       0.781
+    mAP50-95            0.733       0.485
+
+Velocidad de inferencia en A100:
+
+    Etapa                Tiempo
+    ────────────────────────────
+    Preprocesamiento     0.1 ms
+    Inferencia           3.6 ms
+    Postprocesamiento    3.9 ms
+    Total por imagen     7.6 ms
+
+Tiempo total de fine-tune: 0.217 horas (13 minutos) en A100.
+
+Comparación pre-entrenamiento vs fine-tune:
+
+Tabla 2.4 — Evolución de métricas con el fine-tune
+
+    Métrica          Pre-entreno (RGB)    Fine-tune (IR)    Diferencia
+    ──────────────────────────────────────────────────────────────────
+    Box mAP50         0.919                0.890             -2.9%
+    Box mAP50-95      0.761                0.733             -2.8%
+    Mask mAP50        0.811                0.781             -3.0%
+    Mask mAP50-95     0.498                0.485             -1.3%
+
+La caída de aproximadamente 3 puntos porcentuales en todas las métricas
+es esperable y atribuible a dos factores: (a) el cambio de dominio RGB→IR,
+y (b) la sustitución de etiquetas ground truth (17 clases, anotación manual)
+por pseudo-labels (1 clase, FastSAM automático). A pesar de esta reducción,
+el modelo fine-tuneado mantiene una precisión de detección superior al 89%
+(mAP50), lo cual es más que suficiente para la tarea de filtrado semántico
+en el pipeline de reconstrucción.
+
+
+================================================================================
+3. PIPELINE DE RECONSTRUCCIÓN 3D
+================================================================================
+
+3.1 Diagrama de Flujo
+--------------------------------------------------------------------------------
+
+El pipeline de reconstrucción 3D procesa secuencialmente cada par de
+fotogramas IR+Depth a través de 5 etapas:
+
+    ┌────────────┐    ┌──────────────┐    ┌───────────────┐    ┌──────────┐    ┌──────────┐
+    │ IR+Depth   │ →  │ Preprocesa-  │ →  │ Estimación    │ →  │ Fusión   │ →  │ Malla    │
+    │ (319 pares)│    │ miento/frame │    │ de Pose (ICP) │    │ TSDF     │    │ 3D (PLY) │
+    └────────────┘    └──────────────┘    └───────────────┘    └──────────┘    └──────────┘
+
+    Etapa 1: Adquisición — 319 pares IR+Depth desde cámara RealSense
+    Etapa 2: Preprocesamiento — filtro bilateral, crop Z, outlier removal
+    Etapa 3: Odometría — ICP point-to-plane con inicialización RGBD
+    Etapa 4: Fusión — integración volumétrica TSDF
+    Etapa 5: Post-procesamiento — Taubin smooth, simplificación, exportación
+
+
+3.2 Preprocesamiento por Fotograma
+--------------------------------------------------------------------------------
+
+Cada fotograma (par IR + Depth) es sometido a las siguientes operaciones
+antes de ser integrado al volumen TSDF:
+
+3.2.1 Filtro bilateral sobre el mapa de profundidad
+
+    El filtro bilateral [3] se aplica al mapa de profundidad (en metros,
+    float32) con los siguientes parámetros:
+
+        d (diámetro del kernel):         5 píxeles
+        sigmaColor (σ en espacio de intensidad): 0.5
+        sigmaSpace (σ en espacio geométrico):    5.0
+
+    Este filtro tiene la propiedad de preservar los bordes de los objetos
+    mientras suaviza el ruido gaussiano en regiones homogéneas, lo cual es
+    crítico para la calidad de la malla final: los bordes nítidos en el mapa
+    de profundidad se traducen en superficies bien definidas en el modelo 3D.
+
+3.2.2 Recorte vertical (Z crop)
+
+    Para excluir el piso y el techo —elementos estructurales que no son
+    relevantes para la reconstrucción de objetos interiores y que introducen
+    planos dominantes que degradan el ICP— se aplica un recorte en el eje Z
+    (vertical) del espacio de la cámara:
+
+        Z mínimo: 0.3 m  (excluye el plano del suelo)
+        Z máximo: 2.8 m  (excluye el plano del techo)
+        Rango conservado: 2.5 m de altura vertical
+
+    Este recorte reduce la profundidad válida promedio del 93% al 61%,
+    eliminando selectivamente los planos estructurales mientras conserva
+    los objetos de interés (muebles, camas, sillas, etc.).
+
+3.2.3 Filtro estadístico de outliers
+
+    Sobre la nube de puntos generada a partir del frame actual, se aplica
+    un filtro de eliminación de outliers estadísticos (Statistical Outlier
+    Removal) que descarta puntos cuya distancia media a sus k vecinos más
+    cercanos excede μ + σ · std_ratio:
+
+        k (nb_neighbors):         20
+        std_ratio:                1.8
+
+    Este filtro elimina los "picos" y "despuntes" característicos del ruido
+    de sensor en los bordes de los objetos, donde el sensor de profundidad
+    infrarrojo produce mediciones erráticas.
+
+3.2.4 Truncamiento de profundidad
+
+        Profundidad máxima:       5.0 m
+        Valores > 5.0 m:          recortados a 5.0 m (ruido de fondo)
+
+3.2.5 Conversión de IR a color para texturizado
+
+    La imagen infrarroja monocromática (1 canal) se replica a 3 canales
+    (BGR) mediante cv2.cvtColor(..., COLOR_GRAY2BGR) para proporcionar
+    información de textura al volumen TSDF en formato RGB8.
+
+
+3.3 Estimación de Pose (Odometría Visual)
+--------------------------------------------------------------------------------
+
+La estimación de la trayectoria de la cámara se realiza mediante un
+esquema híbrido de dos etapas: inicialización con odometría RGBD y
+refinamiento con ICP point-to-plane.
+
+3.3.1 Inicialización: RGBD Odometry
+
+    Se utiliza el algoritmo de odometría RGBD con jacobiano híbrido
+    (RGBDOdometryJacobianFromHybridTerm) de Open3D [4], que combina
+    información fotométrica (intensidad IR) y geométrica (profundidad)
+    para producir una estimación inicial de la transformación rígida
+    entre dos fotogramas consecutivos:
+
+        T_init = compute_rgbd_odometry(rgbd_n, rgbd_{n-1}, intrinsics)
+
+    Si la odometría converge exitosamente, T_init se utiliza como
+    estimación inicial para el ICP. En caso contrario, se utiliza la
+    matriz identidad (T_init = I₄).
+
+3.3.2 Refinamiento: ICP Point-to-Plane
+
+    El algoritmo Iterative Closest Point (ICP) en su variante point-to-plane
+    minimiza el error de alineación proyectando las correspondencias sobre
+    las normales de la superficie de referencia, lo que produce una
+    convergencia más rápida y precisa que el ICP point-to-point clásico [5].
+
+    Parámetros de ICP:
+
+        Máxima distancia de correspondencia:  0.04 m
+        Máximo de iteraciones:                80
+        Criterio de convergencia:             ICPConvergenceCriteria(max_iteration=80)
+        Método de estimación:                 TransformationEstimationPointToPlane
+
+    Ecuación de transformación acumulada:
+
+        P_n = P_{n-1} · inv(T_icp)
+
+    donde P_n es la pose global del fotograma n, P_{n-1} la pose del
+    fotograma anterior, y T_icp la transformación estimada por ICP.
+
+3.3.3 Criterio de aceptación de fotogramas
+
+    Un fotograma se considera válido para integración si el fitness del ICP
+    —definido como la fracción de correspondencias encontradas— supera un
+    umbral mínimo:
+
+        fitness > 0.4   →   fotograma aceptado e integrado al TSDF
+        fitness ≤ 0.4   →   fotograma descartado
+
+    Este filtro elimina fotogramas con movimiento brusco de cámara, oclusión
+    severa, o insuficiente solapamiento con el fotograma anterior, que de
+    otro modo introducirían deriva (drift) en la trayectoria acumulada.
+
+
+3.4 Fusión Volumétrica (TSDF)
+--------------------------------------------------------------------------------
+
+La integración de los fotogramas alineados en un modelo 3D coherente se
+realiza mediante una Función de Distancia Signada Truncada (Truncated
+Signed Distance Function, TSDF) [6].
+
+3.4.1 Configuración del volumen TSDF
+
+    Tipo de volumen:    ScalableTSDFVolume (Open3D)
+    Longitud de vóxel:  0.008 m (8 mm)
+    Truncamiento SDF:   0.04 m (4 cm)
+    Tipo de color:      RGB8
+    Escala de profundidad integrada: 1.0 (los mapas ya están en metros)
+    Truncamiento de profundidad:     5.0 m
+
+    La elección de voxel_length = 0.008 m (frente a 0.01 m en V1) produce
+    una malla con el doble de resolución espacial, capturando detalles finos
+    de la geometría de los objetos a costa de un mayor tiempo de cómputo y
+    consumo de memoria.
+
+    El parámetro sdf_trunc = 0.04 m define una banda de incertidumbre de
+    ±4 cm alrededor de la superficie estimada. Valores menores producen
+    superficies más nítidas pero son más sensibles al ruido del sensor;
+    valores mayores suavizan el ruido a costa de perder detalle geométrico.
+
+3.4.2 Proceso de integración
+
+    Para cada fotograma aceptado (fitness > 0.4):
+
+        volume.integrate(rgbd_image, intrinsics, pose_global)
+
+    donde:
+    - rgbd_image contiene el mapa de profundidad preprocesado y la textura IR,
+    - intrinsics es la matriz de parámetros intrínsecos de la cámara,
+    - pose_global es la transformación acumulada del fotograma en el espacio
+      mundial.
+
+
+3.5 Post-Procesamiento de Malla
+--------------------------------------------------------------------------------
+
+3.5.1 Extracción de iso-superficie
+
+    La malla triangular se extrae del volumen TSDF mediante el algoritmo
+    Marching Cubes, identificando la superficie donde la función de
+    distancia signada cruza el valor cero:
+
+        mesh = volume.extract_triangle_mesh()
+
+3.5.2 Suavizado de Taubin
+
+    Se aplica el filtro de suavizado de Taubin [7] —un filtro pasa-bajos
+    que preserva el volumen y evita el encogimiento característico del
+    suavizado laplaciano— con 10 iteraciones:
+
+        mesh = mesh.filter_smooth_taubin(number_of_iterations=10)
+
+    Este paso elimina el ruido de alta frecuencia en la superficie de la
+    malla, produciendo un acabado visual más limpio sin deformar la
+    geometría global de los objetos.
+
+3.5.3 Simplificación de malla
+
+    Para reducir la complejidad poligonal a un nivel manejable para
+    visualización y edición, se aplica una decimación cuadrática (quadric
+    error metric decimation):
+
+        mesh = mesh.simplify_quadric_decimation(target_number_of_triangles=300,000)
+
+    La decimación cuadrática colapsa aristas iterativamente, minimizando
+    el error cuadrático medio introducido en cada paso, lo que preserva
+    la fidelidad geométrica mientras reduce drásticamente el conteo de
+    triángulos.
+
+3.5.4 Limpieza y exportación
+
+    - remove_degenerate_triangles(): elimina triángulos con área nula.
+    - compute_vertex_normals(): recalcula normales por vértice.
+    - Exportación a formato PLY (Polygon File Format), compatible con
+      Blender, MeshLab, CloudCompare y ParaView.
+
+
+================================================================================
+4. RESULTADOS EXPERIMENTALES
+================================================================================
+
+4.1 Métricas de Reconstrucción
+--------------------------------------------------------------------------------
+
+Se desarrollaron dos versiones del pipeline de reconstrucción. La versión
+V1 integró todos los fotogramas sin filtros de calidad, mientras que la
+versión V2 aplicó los filtros y criterios descritos en la Sección 3.
+
+Tabla 4.1 — Comparativa de métricas de reconstrucción V1 vs V2
+
+    Métrica                         V1              V2
+    ─────────────────────────────────────────────────────────────────────
+    Fotogramas procesados           319             160 (cada 2º frame)
+    Fotogramas integrados           319 (100%)      100 (62.5%)
+    Fotogramas descartados          0               60 (37.5%)
+    ICP fitness promedio            97.45%          90.9%
+    ICP RMSE promedio               0.026 m         0.0165 m
+    Profundidad válida promedio     92.35%          61.06%
+    Vértices de malla               5,637,875       245,284
+    Triángulos de malla             10,048,530      299,999
+    Piso y techo                    Incluidos       Excluidos (Z crop)
+    Picos/artefactos de ruido       Abundantes      Mínimos
+    Tamaño de archivo PLY           ~400 MB         ~15.6 MB
+    Tiempo de cómputo (CPU)         ~8 min          ~12 min
+
+
+4.2 Análisis de Resultados
+--------------------------------------------------------------------------------
+
+4.2.1 Mejora en la precisión del ICP (RMSE)
+
+    El RMSE del ICP se redujo de 2.6 cm (V1) a 1.65 cm (V2), una mejora
+    del 36.5%. Esta reducción se atribuye a dos factores: (a) el filtro
+    bilateral aplicado al mapa de profundidad reduce el ruido que el ICP
+    interpreta erróneamente como desplazamiento, y (b) el umbral de fitness
+    mínimo descarta los fotogramas peor alineados, evitando que contaminen
+    la trayectoria acumulada.
+
+4.2.2 Reducción de complejidad poligonal
+
+    La malla V2 contiene 299,999 triángulos —33.5 veces menos que los
+    10,048,530 de V1— lo que la hace adecuada para visualización interactiva
+    en Blender y otros visores 3D sin requerir hardware especializado.
+    Esta reducción se logró mediante la combinación de:
+    (a) recorte Z (elimina ~40% de los puntos correspondientes a piso/techo),
+    (b) filtro estadístico de outliers (elimina picos aislados),
+    (c) simplificación quadric decimation post-extracción.
+
+4.2.3 Exclusión de planos estructurales
+
+    El recorte vertical Z ∈ [0.3, 2.8] elimina eficazmente el piso y el
+    techo de la reconstrucción, enfocando el modelo 3D exclusivamente en
+    los objetos de interés (mobiliario, paredes parciales). Esto es
+    particularmente relevante para aplicaciones de diseño de interiores
+    y realidad aumentada, donde los planos estructurales añaden ruido
+    visual sin aportar información semántica útil.
+
+4.2.4 Trade-off: fitness vs RMSE
+
+    Aunque el fitness promedio del ICP es menor en V2 (90.9% vs 97.45%),
+    esto refleja un criterio de calidad más estricto: en V2 se descartan
+    explícitamente los fotogramas con fitness < 0.4, mientras que en V1
+    todos los fotogramas se integran independientemente de su calidad de
+    alineación. Como resultado, V2 produce una trayectoria más limpia
+    (menor RMSE) a costa de utilizar menos fotogramas (100 vs 319).
+
+
+4.3 Rendimiento Computacional
+--------------------------------------------------------------------------------
+
+Tabla 4.2 — Tiempos de ejecución por etapa (hardware utilizado)
+
+    Etapa                    Hardware            Tiempo
+    ──────────────────────────────────────────────────────────
+    Pre-entreno YOLO         RTX 3080 Ti (12 GB)    4.8 h
+    Fine-tune YOLO IR        A100-SXM4-80GB         0.22 h (13 min)
+    Pseudo-labels (319 img)  CPU (Xeon E5-2680 v3)   1-2 min
+    Reconstrucción V2 (160 img) CPU (Xeon, 125 GB RAM)  ~12 min
+    Total pipeline completo  —                        ~5.2 h
+
+
+================================================================================
+5. HERRAMIENTAS Y DEPENDENCIAS
+================================================================================
+
+5.1 Software
+--------------------------------------------------------------------------------
+
+    Lenguaje:       Python 3.12.9
+    Deep Learning:  PyTorch 2.5.1, Ultralytics 8.3.162–8.4.48
+    Visión 3D:      Open3D 0.19.0
+    Visión 2D:      OpenCV 4.13.0
+    Numérico:       NumPy 2.4.4, SciPy 1.17.1
+    Utilidades:     tqdm, loguru, PyYAML 6.0.3
+    SLURM:          gestión de trabajos en clúster
+
+5.2 Hardware
+--------------------------------------------------------------------------------
+
+    Pre-entrenamiento YOLO:
+        GPU:    NVIDIA GeForce RTX 3080 Ti (12 GB VRAM)
+        CPU:    AMD Ryzen / Intel Core
+        RAM:    32 GB
+
+    Fine-tune YOLO + Reconstrucción:
+        GPU:    NVIDIA A100-SXM4-80GB (80 GB VRAM)
+        CPU:    2× Intel Xeon E5-2680 v3 @ 2.50 GHz (24 cores, 48 threads)
+        RAM:    125 GB DDR4
+
+    Clúster institucional:
+        Partición:  gpu2
+        Nodos:      ampere01, ampere02
+        GPUs/nodo:  4× NVIDIA A100 (80 GB)
+        RAM/nodo:   1 TB
+        Gestor:     SLURM 22.05.2
+
+
+================================================================================
+6. COMANDOS DE REPRODUCCIÓN
+================================================================================
+
+6.1 Pre-entrenamiento YOLO11x-seg en SUN RGB-D
+--------------------------------------------------------------------------------
+
+    cd /zfs-home/202501029N/Terminal/FV2
+    python train/train.py
+
+6.2 Fine-tune YOLO11x-seg en IR
+--------------------------------------------------------------------------------
+
+    cd /zfs-home/202501029N/Terminal/FV2/Reentreno/yolo_segmentation
+    python main.py
+
+    O mediante SLURM:
+
+    sbatch /zfs-home/202501029N/Terminal/FV2/Reentreno/run_finetune.sbatch
+
+6.3 Reconstrucción 3D (Versión Final V2)
+--------------------------------------------------------------------------------
+
+    python tools/run_reconstruction_v2.py \
+        --ir-dir Reentreno/images \
+        --depth-dir Reentreno/depth_maps \
+        --output-dir "Metricas Reconstruccion" \
+        --depth-scale 0.001 \
+        --depth-trunc 5.0 \
+        --z-min 0.3 \
+        --z-max 2.8 \
+        --icp-dist 0.04 \
+        --icp-iter 80 \
+        --min-fitness 0.4 \
+        --voxel-length 0.008 \
+        --sdf-trunc 0.04
+
+
+================================================================================
+REFERENCIAS
+================================================================================
+
+[1] Song, S., Lichtenberg, S. P., & Xiao, J. (2015). SUN RGB-D: A RGB-D
+    Scene Understanding Benchmark Suite. Proceedings of the IEEE Conference
+    on Computer Vision and Pattern Recognition (CVPR).
+
+[2] Ultralytics. (2024). YOLO11: You Only Look Once. Documentación oficial.
+    https://docs.ultralytics.com/models/yolo11/
+
+[3] Paris, S., Kornprobst, P., Tumblin, J., & Durand, F. (2009). Bilateral
+    Filtering: Theory and Applications. Foundations and Trends in Computer
+    Graphics and Vision.
+
+[4] Zhou, Q. Y., Park, J., & Koltun, V. (2018). Open3D: A Modern Library
+    for 3D Data Processing. arXiv:1801.09847.
+
+[5] Rusinkiewicz, S., & Levoy, M. (2001). Efficient Variants of the ICP
+    Algorithm. Proceedings of the 3rd International Conference on 3D
+    Digital Imaging and Modeling.
+
+[6] Curless, B., & Levoy, M. (1996). A Volumetric Method for Building
+    Complex Models from Range Images. Proceedings of SIGGRAPH.
+
+[7] Taubin, G. (1995). A Signal Processing Approach to Fair Surface Design.
+    Proceedings of SIGGRAPH.
+
+================================================================================
+                        FIN DEL DOCUMENTO
+================================================================================

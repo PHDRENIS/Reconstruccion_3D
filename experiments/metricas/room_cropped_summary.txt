@@ -1,0 +1,7 @@
+original: 5,346,863 pts
+after_crop_dbscan: 885,308 pts
+mesh_vertices: 100,875
+mesh_triangles: 200,000
+z_center: -1.0
+poisson_depth: 10
+path: C:\Users\renea\Desktop\IPN\TT\Metricas Reconstruccion\room_cropped.ply

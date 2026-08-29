@@ -1,0 +1,31 @@
+============================================================
+MEDICIONES DIMENSIONALES DEL MODELO 3D
+NOTA: Para comparacion con mediciones fisicas futuras
+============================================================
+
+--- Malla Limpia (room_final) ---
+Puntos: 69,532
+Bounding Box min: [-5.718785231510215, -2.5190251078790302, -7.359384851877213]
+Bounding Box max: [5.8701530950302185, 5.4779971717190135, 6.774272518430199]
+Ancho (X): 11.589 m
+Largo (Y): 7.997 m
+Alto (Z): 14.134 m
+Area piso: 92.68 m²
+Volumen: 1309.86 m³
+
+--- Nube Etiquetada (room_labeled) ---
+Puntos: 3,584,435
+Bounding Box min: [-5.409748701265209, -2.495, -7.294532118499569]
+Bounding Box max: [5.245, 5.2250000000000005, 6.175]
+Ancho (X): 10.655 m
+Largo (Y): 7.72 m
+Alto (Z): 13.47 m
+Area piso: 82.25 m²
+Volumen: 1107.93 m³
+
+============================================================
+ESPACIO RESERVADO PARA COMPARACION CON MEDICIONES FISICAS:
+Ancho real: ___ m
+Largo real: ___ m
+Alto real:  ___ m
+============================================================
