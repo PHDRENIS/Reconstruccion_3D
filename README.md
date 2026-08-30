@@ -122,24 +122,6 @@ python src/reconstruction/tools/run_final_reconstruction.py
 python src/reconstruction/tools/reconstruction_max_quality.py
 ```
 
-##  Configuración
-
-Todas las rutas hardcodeadas originales (`C:\Users\victo\...`, `/zfs-home/...`) fueron centralizadas en `configs/`. **Debes editar `configs/*.yaml` antes de ejecutar**:
-
-- `configs/yolo_ir_config.yaml` → `paths.ir_images`, `paths.depth_maps`
-- `configs/fv2_config.yaml` → `paths.data_root`
-- `configs/sunrgbd.yaml` → `path`
-
-##  Qué se limpió respecto al original
-
-- Eliminados: `3x .venv` (~2GB), `TT (1).zip` (3.5GB), `Diapositivas.zip`, `TT Reporte final.zip`, `__pycache__/`, `.ruff_cache`, `.ply` gigantes (>5MB), `SUNRBG_IMAGES` duplicado, `TT/TT/` anidado.
-- Renombrado sin espacios/acentos (`F Vision` → `fusion`, `Nueva reconstrucción` → `experiments/reconstruccion`; 3 archivos `Reconstrucción...` → `reconstruccion_*.jpeg/pdf`).
-- Archivados `configs/f_vision_*` en `configs/legacy/` (rutas absolutas `/zfs-home` como referencia).
-- Ablaciones: solo métricas + `.gitkeep`/`README.md` en `masks/` (954 PNGs ~4.6 MB ignorados via `.gitignore:52`, antes 1911 imágenes). `overlays/*.png` ignorados salvo `sample_*.png`.
-- `docs/ejemplos/*.raw` (10× ~400KB) ignorados via `.gitignore:57`; solo `.png` + `README.md` versionados.
-- LaTeX: `docs/reporte_final/main.bbl-SAVE-ERROR` eliminado, auxiliares `*.aux/*.log` ignorados.
-- Inferencia: `Validation/*.npy` (3.3GB) removido, queda `data/samples/` de ejemplo.
-
 ##  Reproducibilidad
 
 - `requirements.txt` unificado (torch, ultralytics, tensorflow, opencv, open3d)
