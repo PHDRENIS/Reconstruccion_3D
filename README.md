@@ -1,4 +1,4 @@
-#Reconstrucción 3D de Escenas Interiores con Cámara de Profundidad de Bajo Costo
+# Reconstrucción 3D de Escenas Interiores con Cámara de Profundidad de Bajo Costo
 
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue)](https://www.python.org/downloads/)
 [![License MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
