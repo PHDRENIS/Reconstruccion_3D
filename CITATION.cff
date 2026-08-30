@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+title: "TT Limpio — Reconstrucción 3D de Escenas Interiores con Cámara de Profundidad de Bajo Costo"
+message: "Si usas este software, por favor cítalo usando estos metadatos."
+type: thesis
+authors:
+  - family-names: "Tecpa Cisneros"
+    given-names: "Victor Hugo"
+    affiliation: "IPN UPIIT"
+  - family-names: "Santos Mora"
+    given-names: "René Alejandro"
+    affiliation: "IPN UPIIT"
+identifiers:
+  - type: url
+    value: "https://github.com/vhtc-rasm/TT-Limpio"
+    description: "Repositorio GitHub"
+repository-code: "https://github.com/vhtc-rasm/TT-Limpio"
+license: MIT
+keywords:
+  - vision-artificial
+  - reconstruccion-3d
+  - depth-completion
+  - yolo
+  - segmentacion-semantica
+  - open3d
+  - sun-rgbd
+  - infrarrojo
+  - efficientnet
+url: "https://github.com/vhtc-rasm/TT-Limpio"
+date-released: 2026-08-29
+version: "1.0.0"

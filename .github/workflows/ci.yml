@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  lint-and-compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Ruff check
+        run: ruff check src/ --output-format=github || true
+
+      - name: Compile Python (syntax check)
+        run: python -m py_compile src/preprocessing/*.py src/depth_completion/*.py src/segmentation/*.py src/fusion/*.py
+
+      # Opcional: instalar deps ligeras (sin torch/tensorflow pesados en CI gratuito)
+      # - name: Validate requirements can be parsed
+      #   run: pip install --dry-run -r requirements.txt || true

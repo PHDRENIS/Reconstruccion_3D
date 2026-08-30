@@ -1,5 +1,9 @@
 # TT Limpio — Reconstrucción 3D de Escenas Interiores con Cámara de Profundidad de Bajo Costo
 
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue)](https://www.python.org/downloads/)
+[![License MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![CI](https://github.com/vhtc-rasm/TT-Limpio/actions/workflows/ci.yml/badge.svg)](https://github.com/vhtc-rasm/TT-Limpio/actions/workflows/ci.yml)
+
 > Trabajo Terminal — IPN UPIIT | VHTC / RASM
 
 Pipeline completo para **completamiento de profundidad + segmentación semántica (YOLO) + reconstrucción 3D** usando SUN RGB-D.
@@ -11,37 +15,45 @@ TT Limpio/
 ├── configs/                  # Configuraciones YAML (YOLO, FV2, SUNRGBD)
 │   ├── yolo_ir_config.yaml
 │   ├── sunrgbd.yaml
-│   └── fv2_config.yaml
+│   ├── fv2_config.yaml
+│   ├── fv2_train_config.yaml
+│   ├── yolo_ir_dataset.yaml
+│   └── legacy/               # f_vision_* archivado (rutas /zfs-home absolutas)
 ├── data/
 │   ├── README.md             # Cómo obtener SUN RGB-D (no se versiona)
 │   └── samples/              # 3 imágenes de ejemplo (val/rgb)
 ├── docs/
-│   ├── reporte/              # PDFs finales (Trabajo_Terminal_*.pdf)
+│   ├── reporte/              # PDFs finales (Reconstruccion_3D_...pdf, Trabajo_Terminal_*.pdf)
 │   ├── reporte_final/        # Fuente LaTeX (main.tex + Figuras/)
 │   ├── diapositivas/         # Presentación
+│   ├── ejemplos/             # PNG muestras versionadas (.raw ignorados via .gitignore)
 │   └── bitacora/             # Bitácora TT
 ├── src/
-│   ├── preprocessing/        # png_to_npy, Resizing_*, quitar_abs, to_binary
+│   ├── preprocessing/        # png_to_npy, Resizing_*, quitar_abs, to_binary (rutas relativas + argparse)
 │   ├── depth_completion/     # EfficientNet UNet (TensorFlow) — data_loader, model_builder, train
 │   ├── segmentation/         # YOLO IR fine-tune — main, dataset, generate_pseudolabels
 │   ├── fusion/               # Pipeline Fusión Visión v2 (FV2) — loader, models, processing, train
 │   ├── fusion_legacy/        # F Vision v1 (referencia)
 │   └── reconstruction/tools/ # 25 scripts de reconstrucción 3D (RANSAC, Poisson, MLS, etc.)
 ├── experiments/
-│   ├── ablacion/             # p70/p80/p90 (solo métricas, 3 overlays de muestra)
+│   ├── ablacion/             # p70/p80/p90 (segmentation_summary.txt + masks/.gitkeep, 954 PNGs ignorados)
 │   ├── curva_aprendizaje/
 │   ├── metricas/
 │   └── reconstruccion/       # JSONs y scripts de evaluación (sin .ply gigantes)
-├── scripts/                  # Wrappers de ejecución (por crear)
+├── scripts/                  # Wrappers bash (preprocessing.sh, train_yolo_ir.sh, run_fv2.sh, reconstruction.sh)
 ├── outputs/                  # .gitignore — resultados generados
+├── LICENSE                   # MIT
+├── .gitattributes            # LFS opcional + normalización eol
+├── environment.yml           # conda env tt (python 3.12 + requirements.txt)
 └── requirements.txt
 ```
 
 ##  Instalación
 
 ```bash
-# 1. Clonar
-git clone <repo> && cd \"TT Limpio\"
+# 1. Clonar (ajusta <user> o usa SSH)
+git clone https://github.com/vhtc-rasm/TT-Limpio.git
+cd "TT Limpio"
 
 # 2. Entorno (elige uno)
 python -m venv .venv && .venv\Scripts\activate        # Windows
@@ -121,8 +133,11 @@ Todas las rutas hardcodeadas originales (`C:\Users\victo\...`, `/zfs-home/...`) 
 ##  Qué se limpió respecto al original
 
 - Eliminados: `3x .venv` (~2GB), `TT (1).zip` (3.5GB), `Diapositivas.zip`, `TT Reporte final.zip`, `__pycache__/`, `.ruff_cache`, `.ply` gigantes (>5MB), `SUNRBG_IMAGES` duplicado, `TT/TT/` anidado.
-- Renombrado sin espacios/acentos (`F Vision` → `fusion`, `Nueva reconstrucción` → `experiments/reconstruccion`).
-- Ablaciones: solo métricas + 3 overlays de muestra (antes 1911 imágenes).
+- Renombrado sin espacios/acentos (`F Vision` → `fusion`, `Nueva reconstrucción` → `experiments/reconstruccion`; 3 archivos `Reconstrucción...` → `reconstruccion_*.jpeg/pdf`).
+- Archivados `configs/f_vision_*` en `configs/legacy/` (rutas absolutas `/zfs-home` como referencia).
+- Ablaciones: solo métricas + `.gitkeep`/`README.md` en `masks/` (954 PNGs ~4.6 MB ignorados via `.gitignore:52`, antes 1911 imágenes). `overlays/*.png` ignorados salvo `sample_*.png`.
+- `docs/ejemplos/*.raw` (10× ~400KB) ignorados via `.gitignore:57`; solo `.png` + `README.md` versionados.
+- LaTeX: `docs/reporte_final/main.bbl-SAVE-ERROR` eliminado, auxiliares `*.aux/*.log` ignorados.
 - Inferencia: `Validation/*.npy` (3.3GB) removido, queda `data/samples/` de ejemplo.
 
 ##  Reproducibilidad
@@ -134,6 +149,28 @@ Todas las rutas hardcodeadas originales (`C:\Users\victo\...`, `/zfs-home/...`) 
   git lfs track "*.pt" "*.ply" "*.pth"
   ```
 
+##  Licencia
+
+MIT — ver [LICENSE](LICENSE) (VHTC / RASM 2025-2026).
+
+##  Citar
+
+Si usas este trabajo, por favor cita `CITATION.cff` o:
+
+```bibtex
+@thesis{tt-limpio-2026,
+  title  = {Reconstrucción 3D de Escenas Interiores mediante una Cámara de Profundidad de Bajo Costo},
+  author = {Tecpa Cisneros, Victor Hugo and Santos Mora, René Alejandro},
+  school = {IPN UPIIT},
+  year   = {2026},
+  url    = {https://github.com/vhtc-rasm/TT-Limpio}
+}
+```
+
 ##  Autores
 
-VHTC / RASM — Trabajo Terminal 2025-2026. Ver `docs/reporte/Trabajo_Terminal_VHTC_RASM.pdf`.
+VHTC / RASM — Trabajo Terminal 2025-2026. Ver `docs/reporte/Trabajo_Terminal_VHTC_RASM.pdf` y `docs/reporte/Reconstruccion_3D_Escenas_Interiores_Camara_Bajo_Costo_v1.pdf`.
+
+##  Contribuir
+
+Ver [CONTRIBUTING.md](CONTRIBUTING.md) y `scripts/README.md` para wrappers reproducibles.
