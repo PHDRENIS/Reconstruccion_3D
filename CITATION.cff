@@ -1,6 +1,6 @@
 cff-version: 1.2.0
-title: "TT Limpio — Reconstrucción 3D de Escenas Interiores con Cámara de Profundidad de Bajo Costo"
-message: "Si usas este software, por favor cítalo usando estos metadatos."
+title: "Reconstrucción 3D de escenas interiores mediante una cámara de profundidad de bajo costo"
+message: "Si usas este software o su reporte técnico, por favor cítalo usando estos metadatos."
 type: thesis
 authors:
   - family-names: "Tecpa Cisneros"
@@ -11,9 +11,9 @@ authors:
     affiliation: "IPN UPIIT"
 identifiers:
   - type: url
-    value: "https://github.com/vhtc-rasm/TT-Limpio"
+    value: "https://github.com/PHDRENIS/Reconstruccion_3D"
     description: "Repositorio GitHub"
-repository-code: "https://github.com/vhtc-rasm/TT-Limpio"
+repository-code: "https://github.com/PHDRENIS/Reconstruccion_3D"
 license: MIT
 keywords:
   - vision-artificial
@@ -25,6 +25,6 @@ keywords:
   - sun-rgbd
   - infrarrojo
   - efficientnet
-url: "https://github.com/vhtc-rasm/TT-Limpio"
+url: "https://github.com/PHDRENIS/Reconstruccion_3D"
 date-released: 2026-08-29
 version: "1.0.0"
